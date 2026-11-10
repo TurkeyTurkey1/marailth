@@ -212,7 +212,7 @@ body.menu-locked { overflow: hidden; }
   border-bottom-color: var(--line-soft);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .nav.menu-open .navlinks {
     display: flex;
     position: absolute;
@@ -1857,9 +1857,12 @@ body.menu-locked { overflow: hidden; }
   .gallery { columns: 2; }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .navlinks { display: none; }
   .burger { display: flex; }
+}
+
+@media (max-width: 900px) {
   .split { grid-template-columns: 1fr; }
   .codex-shell { grid-template-columns: 1fr; }
   .sidebar {

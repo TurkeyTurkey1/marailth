@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070a08">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Marailth">
+<link rel="manifest" href="webmanifest.json">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<meta name="color-scheme" content="dark">
+<title>Map of Marailth — The Known World</title>
+<meta name="description" content="An interactive map of Marailth: pan, zoom and read the nations, cities and seas of the known world, with links into the Codex.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23c9a44b' d='M12 1.5 14.4 9.6 22.5 12l-8.1 2.4L12 22.5 9.6 14.4 1.5 12l8.1-2.4Z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  :root {
+    --bg: #070a08;
+    --panel: #0b110d;
+    --panel-2: #0e1511;
+    --gold: #c9a44b;
+    --gold-lt: #ecd68f;
+    --gold-dim: #8a7133;
+    --text: #e8e1d2;
+    --dim: rgba(232, 225, 210, 0.66);
+    --faint: rgba(232, 225, 210, 0.42);
+    --line: rgba(201, 164, 75, 0.22);
+    --line-soft: rgba(201, 164, 75, 0.12);
+    --display: "Cinzel", "Trajan Pro", Georgia, serif;
+    --serif: "Spectral", "Iowan Old Style", Georgia, serif;
+    --ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --hdr: calc(var(--nav-h) + 50px);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    overflow: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  button { font: inherit; color: inherit; }
+
+  /* ------------------------------------------------ map bar */
+  .mapbar {
+    position: fixed;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    z-index: 90;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 18px;
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(7, 10, 8, 0.92);
+    backdrop-filter: blur(14px);
+  }
+
+  .mapbar-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--ui);
+    font-size: 9px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--faint);
+    white-space: nowrap;
+  }
+
+  .badge {
+    font-family: var(--ui);
+    font-size: 8.5px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 8px;
+    margin-left: 2px;
+  }
+
+  .tools {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tools::-webkit-scrollbar { display: none; }
+
+  .tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 13px;
+    border: 1px solid var(--line-soft);
+    border-radius: 999px;
+    background: none;
+    font-family: var(--ui);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--dim);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+
+  .tool:hover { color: var(--gold-lt); border-color: var(--line); background: rgba(201, 164, 75, 0.06); }
+
+  .tool[aria-pressed="true"],
+  .tool.on {
+    color: #0b0e0a;
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .tool.icon { width: 34px; padding: 0; justify-content: center; font-size: 15px; letter-spacing: 0; }
+  .tool svg { width: 14px; height: 14px; }
+
+  /* ------------------------------------------------ stage */
+  .stage {
+    position: absolute;
+    top: var(--hdr);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    touch-action: none;
+    cursor: grab;
+    background:
+      radial-gradient(90% 70% at 50% 20%, rgba(201, 164, 75, 0.05), transparent 65%),
+      radial-gradient(60% 50% at 20% 90%, rgba(187, 90, 46, 0.05), transparent 70%),
+      #050806;
+  }
+
+  .stage.panning { cursor: grabbing; }
+  .stage.add-mode { cursor: crosshair; }
+
+  .world {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    box-shadow: 0 30px 90px -20px #000, 0 0 0 1px rgba(201, 164, 75, 0.16);
+  }
+
+  .world > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
+  .pins {
+    position: absolute;
+    inset: 0;
+    --inv: 1;
+  }
+
+  .pin {
+    position: absolute;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    transform: translate(-50%, -50%) scale(var(--inv));
+    transition: filter 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pin .dot {
+    position: relative;
+    display: block;
+    width: 13px;
+    height: 13px;
+    background: var(--gold);
+    border: 1px solid #2a2210;
+    transform: rotate(45deg);
+    box-shadow: 0 0 0 1px rgba(236, 214, 143, 0.35), 0 3px 10px rgba(0, 0, 0, 0.7);
+  }
+
+  .pin .dot::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    border: 1px solid rgba(201, 164, 75, 0.55);
+    animation: ping 2.8s var(--ease) infinite;
+  }
+
+  @keyframes ping {
+    0% { transform: scale(0.55); opacity: 0; }
+    22% { opacity: 0.9; }
+    70%, 100% { transform: scale(1.55); opacity: 0; }
+  }
+
+  .pin .tag {
+    position: absolute;
+    left: 50%;
+    top: 17px;
+    font-family: var(--ui);
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--gold-lt);
+    background: rgba(7, 10, 8, 0.88);
+    border: 1px solid var(--line);
+    padding: 3px 7px;
+    opacity: 0;
+    transform: translate(-50%, -3px);
+    transition: opacity 0.18s, transform 0.18s;
+    pointer-events: none;
+  }
+
+  .pin:hover .tag,
+  .pin:focus-visible .tag,
+  .pin.sel .tag { opacity: 1; transform: translate(-50%, 0); }
+
+  .pin:hover .dot,
+  .pin.sel .dot { background: var(--gold-lt); }
+
+  .pin.sel .dot { box-shadow: 0 0 0 2px rgba(236, 214, 143, 0.55), 0 3px 12px rgba(0, 0, 0, 0.8); }
+  .pin.sel .dot::after { animation: none; opacity: 0.9; transform: scale(1.35); }
+
+  .pin:focus-visible { outline: none; }
+  .pin:focus-visible .dot { box-shadow: 0 0 0 3px rgba(236, 214, 143, 0.75); }
+
+  /* ------------------------------------------------ hint + banner */
+  .hint {
+    position: absolute;
+    left: 18px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    z-index: 12;
+    font-family: var(--ui);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+
+  .hint b { color: var(--gold); font-weight: 500; }
+
+  .banner {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translate(-50%, -14px);
+    z-index: 18;
+    display: none;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    background: rgba(10, 15, 12, 0.94);
+    backdrop-filter: blur(10px);
+    font-family: var(--ui);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-lt);
+    white-space: nowrap;
+  }
+
+  .banner.show { display: flex; animation: drop 0.3s var(--ease); }
+  @keyframes drop { from { opacity: 0; transform: translate(-50%, -20px); } }
+
+  .banner button {
+    border: 0;
+    background: none;
+    color: var(--dim);
+    cursor: pointer;
+    font-family: var(--ui);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .banner button:hover { color: var(--gold-lt); }
+
+  /* ------------------------------------------------ panel */
+  .panel {
+    position: absolute;
+    z-index: 25;
+    top: calc(var(--hdr) + 16px);
+    right: 16px;
+    bottom: 16px;
+    width: min(380px, calc(100% - 32px));
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    background: rgba(10, 15, 12, 0.96);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 40px 90px -30px #000;
+    transform: translateX(calc(100% + 32px));
+    opacity: 0;
+    transition: transform 0.35s var(--ease), opacity 0.3s;
+    overflow: hidden;
+  }
+
+  .panel.open { transform: none; opacity: 1; }
+
+  .panel-scroll { overflow-y: auto; padding: 26px 26px 20px; }
+
+  .p-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--ui);
+    font-size: 9px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+
+  .p-eyebrow::before {
+    content: "";
+    width: 20px;
+    height: 1px;
+    background: var(--gold-dim);
+  }
+
+  .panel h2 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: clamp(1.5rem, 3vw, 1.9rem);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    color: #f4eede;
+  }
+
+  .panel p {
+    margin: 16px 0 0;
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.72;
+    color: var(--dim);
+  }
+
+  .p-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 1px solid var(--gold);
+    background: var(--gold);
+    color: #0b0e0a;
+    font-family: var(--ui);
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .btn:hover { background: var(--gold-lt); border-color: var(--gold-lt); }
+  .btn::after { content: none; }
+
+  .btn.ghost {
+    background: none;
+    border-color: var(--line-soft);
+    color: var(--dim);
+  }
+
+  .btn.ghost:hover { border-color: var(--line); color: var(--gold-lt); background: rgba(201, 164, 75, 0.06); }
+
+  .p-note {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-soft);
+    font-family: var(--ui);
+    font-size: 8.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    line-height: 1.9;
+  }
+
+  .p-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line-soft);
+    border-radius: 50%;
+    background: none;
+    color: var(--dim);
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  .p-close:hover { color: var(--gold-lt); border-color: var(--line); }
+
+  /* form */
+  .field { margin-top: 18px; }
+
+  .field label {
+    display: block;
+    font-family: var(--ui);
+    font-size: 8.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    width: 100%;
+    border: 1px solid var(--line-soft);
+    background: #070b08;
+    color: var(--text);
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 300;
+    padding: 11px 12px;
+    outline: none;
+    border-radius: 0;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .field select {
+    font-family: var(--ui);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    background-image: linear-gradient(45deg, transparent 50%, var(--gold) 50%), linear-gradient(135deg, var(--gold) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 34px;
+  }
+
+  .field textarea { min-height: 96px; resize: vertical; line-height: 1.6; }
+
+  .field input:focus,
+  .field textarea:focus,
+  .field select:focus { border-color: var(--line); }
+
+  /* ------------------------------------------------ toast */
+  .toast {
+    position: absolute;
+    z-index: 40;
+    left: 50%;
+    bottom: calc(22px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 12px);
+    padding: 11px 18px;
+    border: 1px solid var(--gold);
+    background: #0c120e;
+    font-family: var(--ui);
+    font-size: 9.5px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold-lt);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+  }
+
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ------------------------------------------------ phones */
+  @media (max-width: 720px) {
+    .mapbar { padding: 0 12px; gap: 10px; }
+    .mapbar-title { display: none; }
+    .tools { gap: 4px; }
+
+    .tool { height: 32px; padding: 0 8px; font-size: 8.5px; letter-spacing: 0.1em; }
+    .tool.icon { width: 30px; }
+
+    .panel {
+      top: auto;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-height: 66dvh;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      transform: translateY(105%);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .panel.open { transform: none; }
+
+    .panel-scroll { padding: 22px 20px 26px; }
+
+    .panel h2 { font-size: 1.45rem; }
+
+    .p-close { top: 12px; right: 12px; }
+
+    .hint {
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      font-size: 8px;
+      white-space: normal;
+      width: max-content;
+      max-width: calc(100% - 32px);
+      line-height: 1.7;
+    }
+
+    .banner { top: 10px; font-size: 8.5px; padding: 9px 12px; gap: 10px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav solid" data-nav>
+  <div class="nav-inner">
+    <a class="brand" href="index.html" aria-label="Marailth, home">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.5 14.4 9.6 22.5 12l-8.1 2.4L12 22.5 9.6 14.4 1.5 12l8.1-2.4Z"/></svg>
+      <span>Marailth</span>
+    </a>
+    <nav class="navlinks" aria-label="Main">
+      <a href="codex.html">Codex</a>
+      <a href="atlas.html">Atlas</a>
+      <a href="map.html">Map</a>
+      <a href="timeline.html">Timeline</a>
+      <a href="pantheon.html">Pantheon</a>
+      <a href="credits.html">Credits</a>
+    </nav>
+    <div class="nav-right">
+      <button class="kbd-search" type="button" data-search-open aria-label="Search the codex">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+        <span class="lbl">Search</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+      <button class="burger" type="button" aria-label="Open menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mapbar">
+  <div class="mapbar-title"><span class="badge">Map</span><span>The Known World</span></div>
+
+  <div class="tools">
+    <button class="tool icon" type="button" data-act="zoom-out" aria-label="Zoom out">−</button>
+    <button class="tool icon" type="button" data-act="zoom-in" aria-label="Zoom in">+</button>
+    <button class="tool" type="button" data-act="fit">Fit</button>
+    <button class="tool" type="button" data-act="add" aria-pressed="false">Add pin</button>
+    <button class="tool" type="button" data-act="export">Export</button>
+    <button class="tool" type="button" data-act="reset">Reset</button>
+  </div>
+</div>
+
+<main class="stage" id="stage">
+  <div class="world" id="world">
+    <img src="assets/map.png" alt="Map of Marailth" draggable="false" width="970" height="600">
+    <div class="pins" id="pins"></div>
+  </div>
+
+  <div class="banner" id="banner">
+    <span>Click the map to place a pin</span>
+    <button type="button" data-act="cancel-add">Cancel</button>
+  </div>
+
+  <div class="hint" id="hint"><b>Drag</b> to pan · <b>pinch or scroll</b> to zoom · <b>tap a marker</b> to read</div>
+</main>
+
+<aside class="panel" id="panel" aria-hidden="true" aria-label="Place details">
+  <button class="p-close" type="button" data-act="close" aria-label="Close panel">×</button>
+  <div class="panel-scroll" id="panelBody"></div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const CODEX = "codex.html";
+  const ATLAS = "atlas.html";
+  const STORE = "marailth.map.pins.v3";
+
+  /* ---------------------------------------------------------- data */
+  const PLACES = [
+    {
+      id: "city-of-maradorn", name: "City of Maradorn", sub: "Capital city · Maradorn",
+      x: 36.5, y: 69.5,
+      desc: "Capital and largest city of Maradorn, on the southernmost island of the continent. One of the oldest continuously inhabited cities in Marailth and the political, intellectual and economic heart of the nation.",
+      href: "#city-of-maradorn-68"
+    },
+    {
+      id: "maradorn", name: "Maradorn", sub: "Nation · Southern continent",
+      x: 44.4, y: 68.7,
+      desc: "One of the oldest and most learned nations of the known world, ruled by a Guardian chosen by the Council of Elders. Philosophy, mathematics, engineering and the preservation of knowledge are its lifeblood.",
+      href: "#maradorn-53"
+    },
+    {
+      id: "point-of-eloke", name: "Point of Eloke", sub: "Port · Maradorn",
+      x: 33.6, y: 73.2,
+      desc: "A fishing village that became a major coastal trading centre, founded around Orbon 7270. It is one of the most important maritime ports connected to Maradorn.",
+      href: "#point-of-eloke-76"
+    },
+    {
+      id: "ellariondale", name: "Ellariondale", sub: "City-state · South-eastern coast",
+      x: 41.5, y: 76.5,
+      desc: "A peaceful independent city-state on the south-eastern coast, founded around Orbon 7811 by an anti-war movement. A haven for animals, injured creatures and anyone seeking refuge from conflict.",
+      href: "#ellariondale-99"
+    },
+    {
+      id: "stoomes", name: "Stoomes", sub: "City · Solvyran territory",
+      x: 47.4, y: 68.7,
+      desc: "A permanent coastal city on the mainland and Solvyra's chief territorial possession: its continental military base and its link to the wider world.",
+      href: "#stoomes-246"
+    },
+    {
+      id: "plains-of-untail", name: "Plains of Untail", sub: "Region · Eastern Maradorn",
+      x: 53, y: 71.5,
+      desc: "A vast open grassland in Maradorn's eastern reaches and one of the most historically important regions in Marailth. The Treaty of Untail was signed here.",
+      href: "#plains-of-untail-179"
+    },
+    {
+      id: "drymoria", name: "Drymoria", sub: "Continent · West of the eastern nations",
+      x: 12, y: 22,
+      desc: "A vast continent west of the eastern nations: deserts, forests, grasslands, wetlands and isolated mountain regions. Defined by contrast rather than unity.",
+      href: "#drymoria-256"
+    },
+    {
+      id: "sangar-mesa", name: "Sangar Mesa", sub: "Region · Drymoria",
+      x: 9.5, y: 33,
+      desc: "One of Drymoria's defining landscapes and, through the Aperion Era, the boundary of human geographical knowledge. Its position near Maldona made it strategically vital.",
+      href: "#sangar-mesa-261"
+    },
+    {
+      id: "maldona", name: "Maldona", sub: "Frontier city · Aluven",
+      x: 8.5, y: 39.5,
+      desc: "Aluven's great frontier city, near Sangar and the Ashwood: a military stronghold, an industrial centre and a gateway to the wilderness.",
+      href: "#maldona-315"
+    },
+    {
+      id: "aluven", name: "Aluven", sub: "Nation · Drymoria",
+      x: 13, y: 46,
+      desc: "One of the oldest and largest nations of Drymoria, settled by Redwickians and grown into a kingdom of trade cities, deserts and long-established settlements.",
+      href: "#aluven-268"
+    },
+    {
+      id: "keldra", name: "Keldra", sub: "Trading city · Aluven",
+      x: 16, y: 50.5,
+      desc: "Aluven's second great trading city, historically a gateway between the kingdom and the wider world through its docks, warehouses and shipyards.",
+      href: "#keldra-287"
+    },
+    {
+      id: "nandarra", name: "Nandarra", sub: "Great harbour · Aluven",
+      x: 9.5, y: 52.5,
+      desc: "Aluven's largest city and greatest economic centre, with the busiest harbour in the known world. Former capital and the great gateway across the Great Sea.",
+      href: "#nandarra-305"
+    },
+    {
+      id: "wanna", name: "Wanna", sub: "Inland city · Aluven",
+      x: 13.5, y: 57.5,
+      desc: "The Heart of the Outback: an inland city of plains and dry grasslands that fed and supplied Aluven's coastal giants.",
+      href: "#wanna-296"
+    },
+    {
+      id: "laperion", name: "Laperion", sub: "Lost city · The western frontier",
+      x: 7, y: 26.5,
+      desc: "The city discovered beyond the western frontier, later destroyed in the Sack. Its survivors founded Blackborough, and its fall ended the Laperous Era.",
+      href: "#road-to-laperion-370"
+    },
+    {
+      id: "frosthaven", name: "Frosthaven", sub: "Northern land",
+      x: 48.5, y: 13,
+      desc: "A harsh northern land, settled by Karhiem's lost sailors and known for centuries more by rumour than by map.",
+      href: ""
+    },
+    {
+      id: "redwick", name: "Redwick", sub: "Eastern power",
+      x: 83.8, y: 76.8,
+      desc: "The great eastern power and one of the first lands settled by humans. Its long rivalry with Aluven shaped much of Marailthian history.",
+      href: "#the-great-aluven-redwick-rivalry-271"
+    },
+    {
+      id: "cherryfall", name: "Cherryfall", sub: "Eastern island",
+      x: 86.6, y: 80.2,
+      desc: "One of the eastern island powers, known for its fisheries and a founding member of the Eastern Maritime League.",
+      href: ""
+    },
+    {
+      id: "karhiem", name: "Karhiem", sub: "Eastern island",
+      x: 83.6, y: 81.6,
+      desc: "An eastern island nation that declared independence from Redwick in Orbon 853; its lost sailors went on to settle Frosthaven.",
+      href: ""
+    },
+    {
+      id: "fungladom", name: "Fungladom", sub: "Island nation · Eastern Isles",
+      x: 86.9, y: 76.6,
+      desc: "An eastern island nation and a member of the Eastern Island Alliance. The first humans to reach Marailth landed on its shores in Orbon 1, and it is now ruled by the Mossbrook line and fields the Mooshrooms in the IMLoC.",
+      href: ""
+    },
+    {
+      id: "solvyra", name: "Solvyra", sub: "Floating island · Eastern sea",
+      x: 76, y: 32.5,
+      desc: "A tiny floating island of some three hundred people, and the most technologically advanced society in the known world. Its possession of Stoomes gives it a permanent foothold on the mainland.",
+      href: "#kingdom-of-solvyra-192"
+    }
+  ];
+
+  const byPlace = new Map(PLACES.map((p) => [p.id, p]));
+
+  /* ---------------------------------------------------------- state */
+  let pins = loadPins();
+  let scale = 1;
+  let tx = 0;
+  let ty = 0;
+  let selected = null;
+  let addMode = false;
+  let draft = null;
+
+  const stage = document.getElementById("stage");
+  const world = document.getElementById("world");
+  const pinsEl = document.getElementById("pins");
+  const panel = document.getElementById("panel");
+  const panelBody = document.getElementById("panelBody");
+  const banner = document.getElementById("banner");
+  const toast = document.getElementById("toast");
+  const hint = document.getElementById("hint");
+
+  const IMG_W = 970;
+  const IMG_H = 600;
+  let minScale = 0.2;
+  let maxScale = 5;
+
+  /* ---------------------------------------------------------- storage */
+  function loadPins() {
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    } catch (e) { /* ignore */ }
+    return demoPins();
+  }
+
+  function demoPins() {
+    return PLACES.map((p, i) => ({
+      uid: "demo-" + i,
+      place: p.id,
+      name: p.name,
+      sub: p.sub,
+      desc: p.desc,
+      href: p.href,
+      x: p.x,
+      y: p.y
+    }));
+  }
+
+  function savePins() {
+    try {
+      localStorage.setItem(STORE, JSON.stringify(pins));
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ---------------------------------------------------------- fit / zoom */
+  function fitScale() {
+    const r = stage.getBoundingClientRect();
+    return Math.min(r.width / IMG_W, r.height / IMG_H);
+  }
+
+  function clamp() {
+    const r = stage.getBoundingClientRect();
+    const w = IMG_W * scale;
+    const h = IMG_H * scale;
+    if (w <= r.width) tx = (r.width - w) / 2;
+    else tx = Math.min(0, Math.max(r.width - w, tx));
+    if (h <= r.height) ty = (r.height - h) / 2;
+    else ty = Math.min(0, Math.max(r.height - h, ty));
+  }
+
+  function apply() {
+    clamp();
+    world.style.width = IMG_W + "px";
+    world.style.height = IMG_H + "px";
+    world.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    pinsEl.style.setProperty("--inv", String(1 / scale));
+  }
+
+  function fit() {
+    const f = fitScale();
+    minScale = f * 0.85;
+    maxScale = f * 5.5;
+    scale = f;
+    const r = stage.getBoundingClientRect();
+    tx = (r.width - IMG_W * scale) / 2;
+    ty = (r.height - IMG_H * scale) / 2;
+    apply();
+  }
+
+  function zoomAt(factor, cx, cy) {
+    const r = stage.getBoundingClientRect();
+    const px = (cx - r.left - tx) / scale;
+    const py = (cy - r.top - ty) / scale;
+    const next = Math.min(maxScale, Math.max(minScale, scale * factor));
+    if (next === scale) return;
+    scale = next;
+    tx = cx - r.left - px * scale;
+    ty = cy - r.top - py * scale;
+    apply();
+  }
+
+  function zoomCentre(factor) {
+    const r = stage.getBoundingClientRect();
+    zoomAt(factor, r.left + r.width / 2, r.top + r.height / 2);
+  }
+
+  /* ---------------------------------------------------------- pins */
+  function renderPins() {
+    pinsEl.innerHTML = "";
+    pins.forEach((pin) => {
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "pin" + (selected === pin.uid ? " sel" : "");
+      el.style.left = pin.x + "%";
+      el.style.top = pin.y + "%";
+      el.dataset.uid = pin.uid;
+      el.setAttribute("aria-label", pin.name + " — " + pin.sub);
+      el.innerHTML = '<span class="dot"></span><span class="tag"></span>';
+      el.querySelector(".tag").textContent = pin.name;
+      pinsEl.appendChild(el);
+    });
+  }
+
+  function startPinDrag(e, pin, el) {
+    if (addMode) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const ox = pin.x;
+    const oy = pin.y;
+    let moved = false;
+    try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
+
+    const move = (ev) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (!moved && Math.hypot(dx, dy) > 5) moved = true;
+      if (!moved) return;
+      pin.x = Math.min(100, Math.max(0, ox + (dx / scale / IMG_W) * 100));
+      pin.y = Math.min(100, Math.max(0, oy + (dy / scale / IMG_H) * 100));
+      el.style.left = pin.x + "%";
+      el.style.top = pin.y + "%";
+    };
+
+    const up = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+      if (moved) {
+        savePins();
+        toastMsg("Pin moved — position saved");
+      } else {
+        select(pin.uid);
+      }
+    };
+
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+  }
+
+  /* ---------------------------------------------------------- panel */
+  function openPanel() {
+    panel.classList.add("open");
+    panel.setAttribute("aria-hidden", "false");
+  }
+
+  function closePanel() {
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden", "true");
+    selected = null;
+    draft = null;
+    renderPins();
+  }
+
+  function select(uid) {
+    const pin = pins.find((p) => p.uid === uid);
+    if (!pin) return;
+    selected = uid;
+    draft = null;
+    renderPins();
+    panelBody.innerHTML = `
+      <div class="p-eyebrow">${esc(pin.sub)}</div>
+      <h2>${esc(pin.name)}</h2>
+      <p>${esc(pin.desc)}</p>
+      <div class="p-actions">
+        ${pin.href ? `<a class="btn" href="${CODEX}${pin.href}">Read in the Codex</a>` : `<a class="btn" href="${ATLAS}">See the plates</a>`}
+        <button class="btn ghost" type="button" data-act="delete">Remove pin</button>
+      </div>
+      <div class="p-note">Drag the marker to reposition it. Changes save to this browser.</div>`;
+    openPanel();
+  }
+
+  function openDraft(x, y) {
+    draft = { x, y };
+    selected = null;
+    renderPins();
+    const options = PLACES.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join("");
+    panelBody.innerHTML = `
+      <div class="p-eyebrow">New marker</div>
+      <h2>Place a pin</h2>
+      <p>Pick a known place, or write your own. The pin stays where you clicked.</p>
+      <div class="field">
+        <label for="placePick">Known place</label>
+        <select id="placePick">${options}<option value="__custom">Custom place…</option></select>
+      </div>
+      <div class="field">
+        <label for="pinName">Name</label>
+        <input id="pinName" type="text" value="${esc(PLACES[0].name)}">
+      </div>
+      <div class="field">
+        <label for="pinDesc">Description</label>
+        <textarea id="pinDesc">${esc(PLACES[0].desc)}</textarea>
+      </div>
+      <div class="p-actions">
+        <button class="btn" type="button" data-act="commit">Place pin</button>
+        <button class="btn ghost" type="button" data-act="cancel">Cancel</button>
+      </div>`;
+    openPanel();
+  }
+
+  function commitDraft() {
+    if (!draft) return;
+    const nameEl = document.getElementById("pinName");
+    const descEl = document.getElementById("pinDesc");
+    const pick = document.getElementById("placePick");
+    const place = byPlace.get(pick.value);
+    const name = (nameEl.value || "").trim();
+    if (!name) {
+      nameEl.focus();
+      return;
+    }
+    const pin = {
+      uid: "p" + Date.now().toString(36),
+      place: place ? place.id : "custom",
+      name,
+      sub: place ? place.sub : "Custom place",
+      desc: (descEl.value || "").trim(),
+      href: place ? place.href : "",
+      x: draft.x,
+      y: draft.y
+    };
+    pins.push(pin);
+    savePins();
+    draft = null;
+    setAddMode(false);
+    select(pin.uid);
+    toastMsg("Pin placed");
+  }
+
+  function deleteSelected() {
+    const i = pins.findIndex((p) => p.uid === selected);
+    if (i < 0) return;
+    pins.splice(i, 1);
+    savePins();
+    closePanel();
+    toastMsg("Pin removed");
+  }
+
+  /* ---------------------------------------------------------- add mode */
+  function setAddMode(on) {
+    addMode = on;
+    stage.classList.toggle("add-mode", on);
+    banner.classList.toggle("show", on);
+    const btn = document.querySelector('[data-act="add"]');
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.classList.toggle("on", on);
+    if (!on) draft = null;
+  }
+
+  /* ---------------------------------------------------------- pan / pinch */
+  const pointers = new Map();
+  let panning = false;
+  let start = null;
+  let pinch = null;
+
+  stage.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".pin") || e.target.closest(".panel")) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try { stage.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
+
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale };
+      return;
+    }
+
+    start = { x: e.clientX, y: e.clientY, tx, ty, moved: false };
+    panning = true;
+    stage.classList.add("panning");
+  });
+
+  stage.addEventListener("pointermove", (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pinch && pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const target = Math.min(maxScale, Math.max(minScale, pinch.scale * (dist / pinch.dist)));
+      const factor = target / scale;
+      if (factor !== 1) zoomAt(factor, mid.x, mid.y);
+      return;
+    }
+
+    if (!panning || !start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.hypot(dx, dy) > 3) start.moved = true;
+    tx = start.tx + dx;
+    ty = start.ty + dy;
+    apply();
+  });
+
+  function endPointer(e) {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (pointers.size === 1) {
+      // one finger lifted after a pinch: stop the remaining finger from jumping
+      panning = false;
+      start = null;
+      stage.classList.remove("panning");
+    }
+    if (pointers.size === 0) {
+      const wasPan = start && start.moved;
+      panning = false;
+      stage.classList.remove("panning");
+      if (!wasPan && e.type === "pointerup" && !addMode && start) {
+        // click on empty map
+        if (selected) closePanel();
+      }
+      if (!wasPan && e.type === "pointerup" && addMode && start) {
+        placeFromEvent(e);
+      }
+      start = null;
+    }
+  }
+
+  stage.addEventListener("pointerup", endPointer);
+  stage.addEventListener("pointercancel", endPointer);
+
+  stage.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    zoomAt(e.deltaY < 0 ? 1.14 : 1 / 1.14, e.clientX, e.clientY);
+  }, { passive: false });
+
+  stage.addEventListener("dblclick", (e) => {
+    if (e.target.closest(".pin")) return;
+    zoomAt(1.7, e.clientX, e.clientY);
+  });
+
+  function placeFromEvent(e) {
+    const r = stage.getBoundingClientRect();
+    const x = ((e.clientX - r.left - tx) / scale / IMG_W) * 100;
+    const y = ((e.clientY - r.top - ty) / scale / IMG_H) * 100;
+    if (x < 0 || y < 0 || x > 100 || y > 100) return;
+    openDraft(x, y);
+  }
+
+  /* ---------------------------------------------------------- panel form wiring */
+  panelBody.addEventListener("change", (e) => {
+    if (e.target.id !== "placePick") return;
+    const place = byPlace.get(e.target.value);
+    if (!place) return;
+    document.getElementById("pinName").value = place.name;
+    document.getElementById("pinDesc").value = place.desc;
+  });
+
+  panelBody.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    if (act === "delete") deleteSelected();
+    if (act === "commit") commitDraft();
+    if (act === "cancel") { setAddMode(false); closePanel(); }
+  });
+
+  /* ---------------------------------------------------------- toolbar */
+  document.querySelector(".tools").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const act = btn.dataset.act;
+    if (act === "zoom-in") zoomCentre(1.35);
+    if (act === "zoom-out") zoomCentre(1 / 1.35);
+    if (act === "fit") fit();
+    if (act === "add") {
+      closePanel();
+      setAddMode(!addMode);
+      if (addMode) toastMsg("Click the map to place a pin");
+    }
+    if (act === "export") exportPins();
+    if (act === "reset") {
+      if (confirm("Remove every pin and restore the demo set?")) {
+        pins = demoPins();
+        savePins();
+        closePanel();
+        renderPins();
+        toastMsg("Demo pins restored");
+      }
+    }
+  });
+
+  document.querySelector("[data-act='close']").addEventListener("click", closePanel);
+  document.querySelector("[data-act='cancel-add']").addEventListener("click", () => setAddMode(false));
+
+  /* ---------------------------------------------------------- export */
+  function exportPins() {
+    const data = JSON.stringify(pins.map((p) => ({
+      name: p.name, sub: p.sub, x: Number(p.x.toFixed(2)), y: Number(p.y.toFixed(2)), desc: p.desc, href: p.href
+    })), null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "marailth-map-pins.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toastMsg("Pins exported as JSON");
+  }
+
+  /* ---------------------------------------------------------- misc */
+  function toastMsg(msg) {
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastMsg.t);
+    toastMsg.t = setTimeout(() => toast.classList.remove("show"), 2400);
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (panel.classList.contains("open")) closePanel();
+      else if (addMode) setAddMode(false);
+    }
+    if (e.key === "+" || e.key === "=") zoomCentre(1.25);
+    if (e.key === "-") zoomCentre(1 / 1.25);
+  });
+
+  window.addEventListener("resize", () => {
+    const wasFit = Math.abs(scale - fitScale()) < 0.02;
+    if (wasFit) fit();
+    else apply();
+  });
+
+  /* ---------------------------------------------------------- boot */
+  fit();
+  renderPins();
+  // attach drag handlers via delegation once
+  pinsEl.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest(".pin");
+    if (!el) return;
+    const pin = pins.find((p) => p.uid === el.dataset.uid);
+    if (pin) startPinDrag(e, pin, el);
+  });
+  setTimeout(() => {
+    hint.style.opacity = "0";
+  }, 9000);
+})();
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

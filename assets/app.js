@@ -212,7 +212,7 @@
   });
 
   window.addEventListener("resize", () => {
-    if (window.innerWidth > 900 && nav && nav.classList.contains("menu-open")) {
+    if (window.innerWidth > 1000 && nav && nav.classList.contains("menu-open")) {
       nav.classList.remove("menu-open");
       document.body.classList.remove("menu-locked");
       const b = $(".burger");
