@@ -617,91 +617,91 @@
 
   const CODEX = "codex.html";
   const ATLAS = "atlas.html";
-  const STORE = "marailth.map.pins.v3";
+  const STORE = "marailth.map.pins.v4";
 
   /* ---------------------------------------------------------- data */
   const PLACES = [
     {
       id: "city-of-maradorn", name: "City of Maradorn", sub: "Capital city · Maradorn",
-      x: 36.5, y: 69.5,
+      x: 46.41, y: 70.07,
       desc: "Capital and largest city of Maradorn, on the southernmost island of the continent. One of the oldest continuously inhabited cities in Marailth and the political, intellectual and economic heart of the nation.",
       href: "#city-of-maradorn-68"
     },
     {
       id: "maradorn", name: "Maradorn", sub: "Nation · Southern continent",
-      x: 44.4, y: 68.7,
+      x: 47.21, y: 77.63,
       desc: "One of the oldest and most learned nations of the known world, ruled by a Guardian chosen by the Council of Elders. Philosophy, mathematics, engineering and the preservation of knowledge are its lifeblood.",
       href: "#maradorn-53"
     },
     {
       id: "point-of-eloke", name: "Point of Eloke", sub: "Port · Maradorn",
-      x: 33.6, y: 73.2,
+      x: 61.32, y: 61.85,
       desc: "A fishing village that became a major coastal trading centre, founded around Orbon 7270. It is one of the most important maritime ports connected to Maradorn.",
       href: "#point-of-eloke-76"
     },
     {
       id: "ellariondale", name: "Ellariondale", sub: "City-state · South-eastern coast",
-      x: 41.5, y: 76.5,
+      x: 58.78, y: 69.41,
       desc: "A peaceful independent city-state on the south-eastern coast, founded around Orbon 7811 by an anti-war movement. A haven for animals, injured creatures and anyone seeking refuge from conflict.",
       href: "#ellariondale-99"
     },
     {
       id: "stoomes", name: "Stoomes", sub: "City · Solvyran territory",
-      x: 47.4, y: 68.7,
+      x: 54.68, y: 79.9,
       desc: "A permanent coastal city on the mainland and Solvyra's chief territorial possession: its continental military base and its link to the wider world.",
       href: "#stoomes-246"
     },
     {
       id: "plains-of-untail", name: "Plains of Untail", sub: "Region · Eastern Maradorn",
-      x: 53, y: 71.5,
+      x: 29.4, y: 62.71,
       desc: "A vast open grassland in Maradorn's eastern reaches and one of the most historically important regions in Marailth. The Treaty of Untail was signed here.",
       href: "#plains-of-untail-179"
     },
     {
       id: "drymoria", name: "Drymoria", sub: "Continent · West of the eastern nations",
-      x: 12, y: 22,
+      x: 13.84, y: 38.73,
       desc: "A vast continent west of the eastern nations: deserts, forests, grasslands, wetlands and isolated mountain regions. Defined by contrast rather than unity.",
       href: "#drymoria-256"
     },
     {
       id: "sangar-mesa", name: "Sangar Mesa", sub: "Region · Drymoria",
-      x: 9.5, y: 33,
+      x: 10.73, y: 32.15,
       desc: "One of Drymoria's defining landscapes and, through the Aperion Era, the boundary of human geographical knowledge. Its position near Maldona made it strategically vital.",
       href: "#sangar-mesa-261"
     },
     {
       id: "maldona", name: "Maldona", sub: "Frontier city · Aluven",
-      x: 8.5, y: 39.5,
+      x: 8.59, y: 41.49,
       desc: "Aluven's great frontier city, near Sangar and the Ashwood: a military stronghold, an industrial centre and a gateway to the wilderness.",
       href: "#maldona-315"
     },
     {
       id: "aluven", name: "Aluven", sub: "Nation · Drymoria",
-      x: 13, y: 46,
+      x: 14.23, y: 43.31,
       desc: "One of the oldest and largest nations of Drymoria, settled by Redwickians and grown into a kingdom of trade cities, deserts and long-established settlements.",
       href: "#aluven-268"
     },
     {
       id: "keldra", name: "Keldra", sub: "Trading city · Aluven",
-      x: 16, y: 50.5,
+      x: 12.4, y: 59.29,
       desc: "Aluven's second great trading city, historically a gateway between the kingdom and the wider world through its docks, warehouses and shipyards.",
       href: "#keldra-287"
     },
     {
       id: "nandarra", name: "Nandarra", sub: "Great harbour · Aluven",
-      x: 9.5, y: 52.5,
+      x: 18.18, y: 40.02,
       desc: "Aluven's largest city and greatest economic centre, with the busiest harbour in the known world. Former capital and the great gateway across the Great Sea.",
       href: "#nandarra-305"
     },
     {
       id: "wanna", name: "Wanna", sub: "Inland city · Aluven",
-      x: 13.5, y: 57.5,
+      x: 14.29, y: 51.26,
       desc: "The Heart of the Outback: an inland city of plains and dry grasslands that fed and supplied Aluven's coastal giants.",
       href: "#wanna-296"
     },
     {
       id: "laperion", name: "Laperion", sub: "Lost city · The western frontier",
-      x: 7, y: 26.5,
+      x: 12.61, y: 19.13,
       desc: "The city discovered beyond the western frontier, later destroyed in the Sack. Its survivors founded Blackborough, and its fall ended the Laperous Era.",
       href: "#road-to-laperion-370"
     },
@@ -713,31 +713,31 @@
     },
     {
       id: "redwick", name: "Redwick", sub: "Eastern power",
-      x: 83.8, y: 76.8,
+      x: 76.96, y: 30.71,
       desc: "The great eastern power and one of the first lands settled by humans. Its long rivalry with Aluven shaped much of Marailthian history.",
       href: "#the-great-aluven-redwick-rivalry-271"
     },
     {
       id: "cherryfall", name: "Cherryfall", sub: "Eastern island",
-      x: 86.6, y: 80.2,
+      x: 76.69, y: 34.82,
       desc: "One of the eastern island powers, known for its fisheries and a founding member of the Eastern Maritime League.",
       href: ""
     },
     {
       id: "karhiem", name: "Karhiem", sub: "Eastern island",
-      x: 83.6, y: 81.6,
+      x: 71.76, y: 18.07,
       desc: "An eastern island nation that declared independence from Redwick in Orbon 853; its lost sailors went on to settle Frosthaven.",
       href: ""
     },
     {
       id: "fungladom", name: "Fungladom", sub: "Island nation · Eastern Isles",
-      x: 86.9, y: 76.6,
+      x: 82.08, y: 40.86,
       desc: "An eastern island nation and a member of the Eastern Island Alliance. The first humans to reach Marailth landed on its shores in Orbon 1, and it is now ruled by the Mossbrook line and fields the Mooshrooms in the IMLoC.",
       href: ""
     },
     {
       id: "solvyra", name: "Solvyra", sub: "Floating island · Eastern sea",
-      x: 76, y: 32.5,
+      x: 85.65, y: 80.15,
       desc: "A tiny floating island of some three hundred people, and the most technologically advanced society in the known world. Its possession of Stoomes gives it a permanent foothold on the mainland.",
       href: "#kingdom-of-solvyra-192"
     }
