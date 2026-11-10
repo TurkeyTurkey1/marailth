@@ -157,7 +157,10 @@
         overlay.innerHTML = `
           <div class="search-box" role="dialog" aria-label="Search the codex">
             <div class="search-top">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+              <button class="search-back" type="button" aria-label="Back to page">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+              </button>
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
               <input type="text" placeholder="Search the codex…" aria-label="Search">
               <kbd>ESC</kbd>
             </div>
@@ -166,6 +169,7 @@
           </div>`;
         document.body.appendChild(overlay);
         const input = $("input", overlay);
+        $(".search-back", overlay).addEventListener("click", closeSearch);
         input.addEventListener("input", () => runSearch(input.value));
         input.addEventListener("keydown", (ev) => {
           if (ev.key === "Enter") {
