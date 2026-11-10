@@ -1,0 +1,16 @@
+{
+  "name": "Marailth — A Codex of the Known World",
+  "short_name": "Marailth",
+  "description": "The lore, gods, nations and maps of Marailth: four Primordials, fifteen gods, eight Solvyran artifacts and the long chronicle of the known world.",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070a08",
+  "theme_color": "#070a08",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
