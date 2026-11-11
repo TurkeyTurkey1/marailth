@@ -1,7 +1,7 @@
 {
-  "name": "Marailth — A Codex of the Known World",
-  "short_name": "Marailth",
-  "description": "The lore, gods, nations and maps of Marailth: four Primordials, fifteen gods, eight Solvyran artifacts and the long chronicle of the known world.",
+  "name": "Maralith — A Codex of the Known World",
+  "short_name": "Maralith",
+  "description": "The lore, gods, nations and maps of Maralith: four Primordials, fifteen gods, eight Solvyran artifacts and the long chronicle of the known world.",
   "start_url": "index.html",
   "scope": "./",
   "display": "standalone",

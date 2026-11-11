@@ -6,12 +6,12 @@
 <meta name="theme-color" content="#070a08">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Marailth">
+<meta name="apple-mobile-web-app-title" content="Maralith">
 <link rel="manifest" href="webmanifest.json">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <meta name="color-scheme" content="dark">
-<title>Map of Marailth — The Known World</title>
-<meta name="description" content="An interactive map of Marailth: pan, zoom and read the nations, cities and seas of the known world, with links into the Codex.">
+<title>Map of Maralith — The Known World</title>
+<meta name="description" content="An interactive map of Maralith: pan, zoom and read the nations, cities and seas of the known world, with links into the Codex.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23c9a44b' d='M12 1.5 14.4 9.6 22.5 12l-8.1 2.4L12 22.5 9.6 14.4 1.5 12l8.1-2.4Z'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/style.css">
@@ -552,9 +552,9 @@
 
 <header class="nav solid" data-nav>
   <div class="nav-inner">
-    <a class="brand" href="index.html" aria-label="Marailth, home">
+    <a class="brand" href="index.html" aria-label="Maralith, home">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.5 14.4 9.6 22.5 12l-8.1 2.4L12 22.5 9.6 14.4 1.5 12l8.1-2.4Z"/></svg>
-      <span>Marailth</span>
+      <span>Maralith</span>
     </a>
     <nav class="navlinks" aria-label="Main">
       <a href="codex.html">Codex</a>
@@ -592,7 +592,7 @@
 
 <main class="stage" id="stage">
   <div class="world" id="world">
-    <img src="assets/map.png" alt="Map of Marailth" draggable="false" width="970" height="600">
+    <img src="assets/map.png" alt="Map of Maralith" draggable="false" width="970" height="600">
     <div class="pins" id="pins"></div>
   </div>
 
@@ -617,14 +617,17 @@
 
   const CODEX = "codex.html";
   const ATLAS = "atlas.html";
-  const STORE = "marailth.map.pins.v4";
+  // Positions of the twenty named places live only in PLACES below. They are
+  // fixed: dragging is disabled and older saved positions are never read. This
+  // key stores custom pins only.
+  const STORE = "maralith.map.pins.v5";
 
   /* ---------------------------------------------------------- data */
   const PLACES = [
     {
       id: "city-of-maradorn", name: "City of Maradorn", sub: "Capital city · Maradorn",
       x: 46.41, y: 70.07,
-      desc: "Capital and largest city of Maradorn, on the southernmost island of the continent. One of the oldest continuously inhabited cities in Marailth and the political, intellectual and economic heart of the nation.",
+      desc: "Capital and largest city of Maradorn, on the southernmost island of the continent. One of the oldest continuously inhabited cities in Maralith and the political, intellectual and economic heart of the nation.",
       href: "#city-of-maradorn-68"
     },
     {
@@ -654,7 +657,7 @@
     {
       id: "plains-of-untail", name: "Plains of Untail", sub: "Region · Eastern Maradorn",
       x: 29.4, y: 62.71,
-      desc: "A vast open grassland in Maradorn's eastern reaches and one of the most historically important regions in Marailth. The Treaty of Untail was signed here.",
+      desc: "A vast open grassland in Maradorn's eastern reaches and one of the most historically important regions in Maralith. The Treaty of Untail was signed here.",
       href: "#plains-of-untail-179"
     },
     {
@@ -709,31 +712,31 @@
       id: "frosthaven", name: "Frosthaven", sub: "Northern land",
       x: 48.5, y: 13,
       desc: "A harsh northern land, settled by Karhiem's lost sailors and known for centuries more by rumour than by map.",
-      href: ""
+      href: "#frosthaven"
     },
     {
       id: "redwick", name: "Redwick", sub: "Eastern power",
       x: 76.96, y: 30.71,
-      desc: "The great eastern power and one of the first lands settled by humans. Its long rivalry with Aluven shaped much of Marailthian history.",
-      href: "#the-great-aluven-redwick-rivalry-271"
+      desc: "The great eastern power and one of the first lands settled by humans. Its long rivalry with Aluven shaped much of Maralithian history.",
+      href: "#redwick"
     },
     {
       id: "cherryfall", name: "Cherryfall", sub: "Eastern island",
       x: 76.69, y: 34.82,
       desc: "One of the eastern island powers, known for its fisheries and a founding member of the Eastern Maritime League.",
-      href: ""
+      href: "#eastern-island-alliance"
     },
     {
       id: "karhiem", name: "Karhiem", sub: "Eastern island",
       x: 71.76, y: 18.07,
       desc: "An eastern island nation that declared independence from Redwick in Orbon 853; its lost sailors went on to settle Frosthaven.",
-      href: ""
+      href: "#karhiem"
     },
     {
       id: "fungladom", name: "Fungladom", sub: "Island nation · Eastern Isles",
       x: 82.08, y: 40.86,
-      desc: "An eastern island nation and a member of the Eastern Island Alliance. The first humans to reach Marailth landed on its shores in Orbon 1, and it is now ruled by the Mossbrook line and fields the Mooshrooms in the IMLoC.",
-      href: ""
+      desc: "An eastern island nation and a member of the Eastern Island Alliance. The first humans to reach Maralith landed on its shores in Orbon 1, and it is now ruled by the Mossbrook line and fields the Mooshrooms in the IMLoC.",
+      href: "#fungladom"
     },
     {
       id: "solvyra", name: "Solvyra", sub: "Floating island · Eastern sea",
@@ -769,33 +772,55 @@
   let maxScale = 5;
 
   /* ---------------------------------------------------------- storage */
-  function loadPins() {
-    try {
-      const raw = localStorage.getItem(STORE);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length) return parsed;
-      }
-    } catch (e) { /* ignore */ }
-    return demoPins();
-  }
-
-  function demoPins() {
-    return PLACES.map((p, i) => ({
-      uid: "demo-" + i,
+  // The pinned places are rebuilt from PLACES on every load, so their
+  // coordinates can never drift, be dragged, or be overridden by old data.
+  function basePins() {
+    return PLACES.map((p) => ({
+      uid: "place-" + p.id,
       place: p.id,
       name: p.name,
       sub: p.sub,
       desc: p.desc,
       href: p.href,
       x: p.x,
-      y: p.y
+      y: p.y,
+      fixed: true
     }));
+  }
+
+  function loadPins() {
+    const pins = basePins();
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((p) => {
+            if (!p || p.fixed) return;
+            if (typeof p.x !== "number" || typeof p.y !== "number") return;
+            if (!p.name) return;
+            pins.push({
+              uid: String(p.uid || "p" + Math.random().toString(36).slice(2)),
+              place: p.place || "custom",
+              name: p.name,
+              sub: p.sub || "Custom place",
+              desc: p.desc || "",
+              href: p.href || "",
+              x: p.x,
+              y: p.y,
+              fixed: false
+            });
+          });
+        }
+      }
+    } catch (e) { /* ignore */ }
+    return pins;
   }
 
   function savePins() {
     try {
-      localStorage.setItem(STORE, JSON.stringify(pins));
+      const custom = pins.filter((p) => !p.fixed);
+      localStorage.setItem(STORE, JSON.stringify(custom));
     } catch (e) { /* ignore */ }
   }
 
@@ -868,45 +893,6 @@
     });
   }
 
-  function startPinDrag(e, pin, el) {
-    if (addMode) return;
-    e.stopPropagation();
-    e.preventDefault();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const ox = pin.x;
-    const oy = pin.y;
-    let moved = false;
-    try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
-
-    const move = (ev) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      if (!moved && Math.hypot(dx, dy) > 5) moved = true;
-      if (!moved) return;
-      pin.x = Math.min(100, Math.max(0, ox + (dx / scale / IMG_W) * 100));
-      pin.y = Math.min(100, Math.max(0, oy + (dy / scale / IMG_H) * 100));
-      el.style.left = pin.x + "%";
-      el.style.top = pin.y + "%";
-    };
-
-    const up = () => {
-      el.removeEventListener("pointermove", move);
-      el.removeEventListener("pointerup", up);
-      el.removeEventListener("pointercancel", up);
-      if (moved) {
-        savePins();
-        toastMsg("Pin moved — position saved");
-      } else {
-        select(pin.uid);
-      }
-    };
-
-    el.addEventListener("pointermove", move);
-    el.addEventListener("pointerup", up);
-    el.addEventListener("pointercancel", up);
-  }
-
   /* ---------------------------------------------------------- panel */
   function openPanel() {
     panel.classList.add("open");
@@ -933,9 +919,9 @@
       <p>${esc(pin.desc)}</p>
       <div class="p-actions">
         ${pin.href ? `<a class="btn" href="${CODEX}${pin.href}">Read in the Codex</a>` : `<a class="btn" href="${ATLAS}">See the plates</a>`}
-        <button class="btn ghost" type="button" data-act="delete">Remove pin</button>
+        ${pin.fixed ? "" : `<button class="btn ghost" type="button" data-act="delete">Remove pin</button>`}
       </div>
-      <div class="p-note">Drag the marker to reposition it. Changes save to this browser.</div>`;
+      <div class="p-note">${pin.fixed ? "This marker is fixed in place and cannot be moved." : "This is a custom marker. Position saved in this browser."}</div>`;
     openPanel();
   }
 
@@ -986,7 +972,8 @@
       desc: (descEl.value || "").trim(),
       href: place ? place.href : "",
       x: draft.x,
-      y: draft.y
+      y: draft.y,
+      fixed: false
     };
     pins.push(pin);
     savePins();
@@ -1140,12 +1127,12 @@
     }
     if (act === "export") exportPins();
     if (act === "reset") {
-      if (confirm("Remove every pin and restore the demo set?")) {
-        pins = demoPins();
-        savePins();
+      if (confirm("Restore the fixed pin positions? Any custom pins will be removed.")) {
+        pins = basePins();
+        try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ }
         closePanel();
         renderPins();
-        toastMsg("Demo pins restored");
+        toastMsg("Pins restored to their fixed positions");
       }
     }
   });
@@ -1162,7 +1149,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "marailth-map-pins.json";
+    a.download = "maralith-map-pins.json";
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     toastMsg("Pins exported as JSON");
@@ -1200,12 +1187,19 @@
   /* ---------------------------------------------------------- boot */
   fit();
   renderPins();
-  // attach drag handlers via delegation once
-  pinsEl.addEventListener("pointerdown", (e) => {
+  // Pins are fixed in place: a click only opens the entry, it never drags.
+  pinsEl.addEventListener("click", (e) => {
     const el = e.target.closest(".pin");
     if (!el) return;
-    const pin = pins.find((p) => p.uid === el.dataset.uid);
-    if (pin) startPinDrag(e, pin, el);
+    e.preventDefault();
+    e.stopPropagation();
+    select(el.dataset.uid);
+  });
+  pinsEl.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".pin")) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
   });
   setTimeout(() => {
     hint.style.opacity = "0";

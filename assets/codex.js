@@ -74,7 +74,7 @@
 
     readerEl.innerHTML = `
       <nav class="crumbs">
-        <a href="index.html">Marailth</a>
+        <a href="index.html">Maralith</a>
         <span class="sep">◆</span>
         <a href="codex.html">Codex</a>
         <span class="sep">◆</span>
@@ -89,8 +89,8 @@
         <div class="prose">${blocksHtml(ch.blocks)}</div>
         ${childrenHtml(ch.children, 0)}
         <footer class="page-foot">
-          <span>Source · p. ${ch.page}</span>
-          ${hasPlates ? '<span><a href="atlas.html">See the plates ↗</a></span>' : "<span>Marailth Codex</span>"}
+          <span>${ch.page ? `Source · p. ${ch.page}` : "Compiled record"}</span>
+          ${hasPlates ? '<span><a href="atlas.html">See the plates ↗</a></span>' : "<span>Maralith Codex</span>"}
         </footer>
       </article>
       <nav class="pager">
@@ -105,7 +105,7 @@
       const active = $(".tree-ch.active");
       if (active) active.scrollIntoView({ block: "nearest" });
     }
-    document.title = `${ch.title} · Marailth Codex`;
+    document.title = `${ch.title} · Maralith Codex`;
     if (push) history.pushState(null, "", "#" + ch.id);
     window.scrollTo({ top: 0, behavior: "instant" in document.documentElement.style ? "instant" : "auto" });
     closeSidebar();
