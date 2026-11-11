@@ -592,7 +592,7 @@
 
 <main class="stage" id="stage">
   <div class="world" id="world">
-    <img src="assets/map.png" alt="Map of Maralith" draggable="false" width="970" height="600">
+    <img src="assets/map.webp" alt="Map of Maralith" draggable="false" width="970" height="600" decoding="async">
     <div class="pins" id="pins"></div>
   </div>
 
@@ -842,10 +842,14 @@
 
   function apply() {
     clamp();
-    world.style.width = IMG_W + "px";
-    world.style.height = IMG_H + "px";
-    world.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-    pinsEl.style.setProperty("--inv", String(1 / scale));
+    // Size the world to the zoomed dimensions instead of CSS-scaling a 970px
+    // layer. A transformed layer is rasterised at its layout size and then
+    // stretched, which is what made the map go soft when zoomed in; sizing it
+    // keeps every zoom level at one image pixel per screen pixel.
+    world.style.width = IMG_W * scale + "px";
+    world.style.height = IMG_H * scale + "px";
+    world.style.transform = `translate(${tx}px, ${ty}px)`;
+    pinsEl.style.setProperty("--inv", "1");
   }
 
   function fit() {
