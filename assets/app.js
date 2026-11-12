@@ -4,6 +4,7 @@
 
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const ROOT = location.pathname.indexOf("/codex/") !== -1 ? "../" : "";
 
   /* ---------------------------------------------------------- nav */
   const nav = $(".nav");
@@ -13,7 +14,7 @@
     window.addEventListener("scroll", onScroll, { passive: true });
 
     const burger = $(".burger");
-    if (burger && !document.body.classList.contains("codex-body")) {
+    if (burger && !$(".sidebar")) {
       burger.addEventListener("click", () => {
         const open = nav.classList.toggle("menu-open");
         document.body.classList.toggle("menu-locked", open);
@@ -137,7 +138,7 @@
       return;
     }
     results.innerHTML = top.map(({ item }) => `
-      <a class="result" href="codex.html#${item.id}">
+      <a class="result" href="${ROOT}codex.html#${item.id}">
         <div class="rt">${highlight(item.title, query)}</div>
         <div class="rp">${item.part}</div>
         <div class="rs">${snippet(item.text, query)}</div>
@@ -148,7 +149,7 @@
     searchBtn.addEventListener("click", (e) => {
       e.preventDefault();
       if (!window.LORE) {
-        location.href = "codex.html#search";
+        location.href = ROOT + "codex.html#search";
         return;
       }
       if (!overlay) {
