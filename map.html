@@ -498,6 +498,66 @@
 
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+  /* ------------------------------------------------ editor lock */
+  .lockwrap {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(4, 7, 5, 0.74);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  .lockwrap.open { opacity: 1; pointer-events: auto; }
+
+  .lockcard {
+    width: min(370px, 100%);
+    padding: 26px 26px 22px;
+    border: 1px solid var(--line);
+    background: #0a0f0c;
+    box-shadow: 0 40px 90px -30px #000;
+    transform: translateY(10px);
+    transition: transform 0.28s var(--ease);
+  }
+
+  .lockwrap.open .lockcard { transform: none; }
+
+  .lockcard h2 {
+    margin: 0;
+    font-family: var(--display);
+    font-size: 1.5rem;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: #f4eede;
+  }
+
+  .lockcard > p {
+    margin: 12px 0 0;
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.65;
+    color: var(--dim);
+  }
+
+  .lockcard .p-eyebrow { margin-bottom: 12px; }
+
+  .lockerr {
+    min-height: 16px;
+    margin: 12px 0 0 !important;
+    font-family: var(--ui);
+    font-size: 8.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #d8794a;
+  }
+
+  .lockerr:empty { visibility: hidden; }
+
   /* ------------------------------------------------ phones */
   @media (max-width: 720px) {
     .mapbar { padding: 0 12px; gap: 10px; }
@@ -541,6 +601,8 @@
     }
 
     .banner { top: 10px; font-size: 8.5px; padding: 9px 12px; gap: 10px; }
+
+    .lockcard { padding: 22px 20px 18px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -610,6 +672,23 @@
 </aside>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="lockwrap" id="lockWrap" aria-hidden="true" inert>
+  <form class="lockcard" id="lockForm" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+    <div class="p-eyebrow">Restricted</div>
+    <h2 id="lockTitle">Editor code</h2>
+    <p>Placing, exporting and resetting pins is limited to the map's editors.</p>
+    <div class="field">
+      <label for="editorCode">Code</label>
+      <input id="editorCode" type="password" name="code" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="lockErr">
+    </div>
+    <p class="lockerr" id="lockErr" role="alert"></p>
+    <div class="p-actions">
+      <button class="btn" type="submit">Unlock</button>
+      <button class="btn ghost" type="button" data-act="lock-cancel">Cancel</button>
+    </div>
+  </form>
+</div>
 
 <script>
 (function () {
@@ -1111,10 +1190,84 @@
     const btn = e.target.closest("[data-act]");
     if (!btn) return;
     const act = btn.dataset.act;
-    if (act === "delete") deleteSelected();
-    if (act === "commit") commitDraft();
+    if (act === "delete") guardEditor(deleteSelected);
+    if (act === "commit") guardEditor(commitDraft);
     if (act === "cancel") { setAddMode(false); closePanel(); }
   });
+
+  /* ---------------------------------------------------------- editor lock
+     Editing is gated behind a code only the editors know. Only the SHA-256
+     digest of that code is stored here, so reading this file does not reveal
+     it. This is a browser-side gate: it keeps visitors from moving pins, it
+     is not a substitute for server-side access control. */
+  const EDITOR_HASH = "12512b8cd75da2eec2e925402407d79962d1c2d7bfd46c3a46444aaa415d6881";
+  const EDITOR_KEY = "maralith.map.editor";
+  const lockWrap = document.getElementById("lockWrap");
+  const lockForm = document.getElementById("lockForm");
+  const lockErr = document.getElementById("lockErr");
+  const codeInput = document.getElementById("editorCode");
+  let unlocked = false;
+  let pendingEdit = null;
+
+  try { unlocked = sessionStorage.getItem(EDITOR_KEY) === "1"; } catch (e) { /* ignore */ }
+
+  function normaliseCode(s) {
+    return String(s == null ? "" : s).toLowerCase().trim().replace(/[\s_-]+/g, "-");
+  }
+
+  function digest(s) {
+    const bytes = new TextEncoder().encode(s);
+    return crypto.subtle.digest("SHA-256", bytes).then((buf) =>
+      Array.prototype.map.call(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join(""));
+  }
+
+  function openLock(next) {
+    pendingEdit = next || null;
+    lockErr.textContent = "";
+    codeInput.value = "";
+    lockWrap.inert = false;
+    lockWrap.classList.add("open");
+    lockWrap.setAttribute("aria-hidden", "false");
+    setTimeout(() => codeInput.focus(), 40);
+  }
+
+  function closeLock() {
+    lockWrap.classList.remove("open");
+    lockWrap.setAttribute("aria-hidden", "true");
+    lockWrap.inert = true;
+    pendingEdit = null;
+  }
+
+  function guardEditor(fn) {
+    if (unlocked) { fn(); return; }
+    openLock(fn);
+  }
+
+  lockForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!window.crypto || !crypto.subtle) {
+      lockErr.textContent = "Unlocking needs a secure (https) connection";
+      return;
+    }
+    digest(normaliseCode(codeInput.value)).then((h) => {
+      if (h !== EDITOR_HASH) {
+        lockErr.textContent = "That code is not recognised";
+        codeInput.select();
+        return;
+      }
+      unlocked = true;
+      try { sessionStorage.setItem(EDITOR_KEY, "1"); } catch (err) { /* ignore */ }
+      const next = pendingEdit;
+      closeLock();
+      toastMsg("Editor unlocked");
+      if (next) next();
+    }).catch(() => {
+      lockErr.textContent = "Could not check the code";
+    });
+  });
+
+  document.querySelector('[data-act="lock-cancel"]').addEventListener("click", closeLock);
+  lockWrap.addEventListener("click", (e) => { if (e.target === lockWrap) closeLock(); });
 
   /* ---------------------------------------------------------- toolbar */
   document.querySelector(".tools").addEventListener("click", (e) => {
@@ -1125,12 +1278,14 @@
     if (act === "zoom-out") zoomCentre(1 / 1.35);
     if (act === "fit") fit();
     if (act === "add") {
-      closePanel();
-      setAddMode(!addMode);
-      if (addMode) toastMsg("Click the map to place a pin");
+      guardEditor(() => {
+        closePanel();
+        setAddMode(!addMode);
+        if (addMode) toastMsg("Click the map to place a pin");
+      });
     }
-    if (act === "export") exportPins();
-    if (act === "reset") {
+    if (act === "export") guardEditor(exportPins);
+    if (act === "reset") guardEditor(() => {
       if (confirm("Restore the fixed pin positions? Any custom pins will be removed.")) {
         pins = basePins();
         try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ }
@@ -1138,7 +1293,7 @@
         renderPins();
         toastMsg("Pins restored to their fixed positions");
       }
-    }
+    });
   });
 
   document.querySelector("[data-act='close']").addEventListener("click", closePanel);
@@ -1174,10 +1329,16 @@
   }
 
   document.addEventListener("keydown", (e) => {
+    if (lockWrap.classList.contains("open")) {
+      if (e.key === "Escape") closeLock();
+      return;
+    }
     if (e.key === "Escape") {
       if (panel.classList.contains("open")) closePanel();
       else if (addMode) setAddMode(false);
     }
+    const tag = (e.target && e.target.tagName ? e.target.tagName : "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
     if (e.key === "+" || e.key === "=") zoomCentre(1.25);
     if (e.key === "-") zoomCentre(1 / 1.25);
   });
