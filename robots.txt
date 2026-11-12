@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://turkeyturkey1.github.io/marailth/sitemap.xml
