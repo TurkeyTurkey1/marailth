@@ -257,6 +257,17 @@
   .pin:focus-visible { outline: none; }
   .pin:focus-visible .dot { box-shadow: 0 0 0 3px rgba(236, 214, 143, 0.75); }
 
+  body.editor-unlocked .pin { cursor: grab; }
+  body.editor-unlocked .pin:hover .dot { box-shadow: 0 0 0 3px rgba(236, 214, 143, 0.55), 0 3px 12px rgba(0, 0, 0, 0.8); }
+
+  .pin.dragging {
+    cursor: grabbing;
+    z-index: 5;
+    transition: none;
+  }
+  .pin.dragging .dot { background: var(--gold-lt); }
+  .pin.dragging .tag { opacity: 1; transform: translate(-50%, 0); }
+
   /* ------------------------------------------------ hint + banner */
   .hint {
     position: absolute;
@@ -709,10 +720,11 @@
 
   const CODEX = "codex.html";
   const ATLAS = "atlas.html";
-  // Positions of the twenty named places live only in PLACES below. They are
-  // fixed: dragging is disabled and older saved positions are never read. This
-  // key stores custom pins only.
+  // Positions of the twenty named places live in PLACES below as the defaults.
+  // Visitors cannot move them. Editors unlocked with the map code can drag
+  // them; their placements are kept in MOVED in that browser only.
   const STORE = "maralith.map.pins.v5";
+  const MOVED = "maralith.map.moved.v1";
 
   /* ---------------------------------------------------------- data */
   const PLACES = [
@@ -864,8 +876,9 @@
   let maxScale = 5;
 
   /* ---------------------------------------------------------- storage */
-  // The pinned places are rebuilt from PLACES on every load, so their
-  // coordinates can never drift, be dragged, or be overridden by old data.
+  // The pinned places are rebuilt from PLACES on every load, so their default
+  // coordinates can never drift. Only an editor's explicit moves are applied
+  // on top, from the MOVED key.
   function basePins() {
     return PLACES.map((p) => ({
       uid: "place-" + p.id,
@@ -882,6 +895,22 @@
 
   function loadPins() {
     const pins = basePins();
+    try {
+      const rawMoved = localStorage.getItem(MOVED);
+      if (rawMoved) {
+        const moved = JSON.parse(rawMoved);
+        if (moved && typeof moved === "object") {
+          pins.forEach((p) => {
+            const m = moved[p.place];
+            if (!p.fixed || !m) return;
+            if (typeof m.x !== "number" || typeof m.y !== "number") return;
+            if (m.x < 0 || m.x > 100 || m.y < 0 || m.y > 100) return;
+            p.x = m.x;
+            p.y = m.y;
+          });
+        }
+      }
+    } catch (e) { /* ignore */ }
     try {
       const raw = localStorage.getItem(STORE);
       if (raw) {
@@ -913,6 +942,23 @@
     try {
       const custom = pins.filter((p) => !p.fixed);
       localStorage.setItem(STORE, JSON.stringify(custom));
+    } catch (e) { /* ignore */ }
+  }
+
+  function saveMoved() {
+    try {
+      const moved = {};
+      pins.forEach((p) => {
+        const def = p.fixed && byPlace.get(p.place);
+        if (!def) return;
+        if (Math.abs(def.x - p.x) < 0.001 && Math.abs(def.y - p.y) < 0.001) return;
+        moved[p.place] = {
+          x: Math.round(p.x * 100) / 100,
+          y: Math.round(p.y * 100) / 100
+        };
+      });
+      if (Object.keys(moved).length) localStorage.setItem(MOVED, JSON.stringify(moved));
+      else localStorage.removeItem(MOVED);
     } catch (e) { /* ignore */ }
   }
 
@@ -1009,6 +1055,11 @@
     selected = uid;
     draft = null;
     renderPins();
+    const note = unlocked
+      ? "Editor mode: drag this marker to reposition it. Moves are saved in this browser."
+      : pin.fixed
+        ? "This marker is fixed in place."
+        : "This is a custom marker. Position saved in this browser.";
     panelBody.innerHTML = `
       <div class="p-eyebrow">${esc(pin.sub)}</div>
       <h2>${esc(pin.name)}</h2>
@@ -1017,7 +1068,7 @@
         ${pin.href ? `<a class="btn" href="${CODEX}${pin.href}">Read in the Codex</a>` : `<a class="btn" href="${ATLAS}">See the plates</a>`}
         ${pin.fixed ? "" : `<button class="btn ghost" type="button" data-act="delete">Remove pin</button>`}
       </div>
-      <div class="p-note">${pin.fixed ? "This marker is fixed in place and cannot be moved." : "This is a custom marker. Position saved in this browser."}</div>`;
+      <div class="p-note">${note}</div>`;
     openPanel();
   }
 
@@ -1223,6 +1274,7 @@
   let pendingEdit = null;
 
   try { unlocked = sessionStorage.getItem(EDITOR_KEY) === "1"; } catch (e) { /* ignore */ }
+  document.body.classList.toggle("editor-unlocked", unlocked);
 
   function normaliseCode(s) {
     return String(s == null ? "" : s).toLowerCase().trim().replace(/[\s_-]+/g, "-");
@@ -1270,9 +1322,10 @@
       }
       unlocked = true;
       try { sessionStorage.setItem(EDITOR_KEY, "1"); } catch (err) { /* ignore */ }
+      document.body.classList.add("editor-unlocked");
       const next = pendingEdit;
       closeLock();
-      toastMsg("Editor unlocked");
+      toastMsg("Editor unlocked — drag pins to move them");
       if (next) next();
     }).catch(() => {
       lockErr.textContent = "Could not check the code";
@@ -1299,12 +1352,15 @@
     }
     if (act === "export") guardEditor(exportPins);
     if (act === "reset") guardEditor(() => {
-      if (confirm("Restore the fixed pin positions? Any custom pins will be removed.")) {
+      if (confirm("Restore the default pin positions? Any custom pins and moved markers will be removed.")) {
         pins = basePins();
-        try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ }
+        try {
+          localStorage.removeItem(STORE);
+          localStorage.removeItem(MOVED);
+        } catch (e) { /* ignore */ }
         closePanel();
         renderPins();
-        toastMsg("Pins restored to their fixed positions");
+        toastMsg("Pins restored to their default positions");
       }
     });
   });
@@ -1365,20 +1421,81 @@
   /* ---------------------------------------------------------- boot */
   fit();
   renderPins();
-  // Pins are fixed in place: a click only opens the entry, it never drags.
+  // Pins open on a click. Once an editor is unlocked they can also be dragged;
+  // a drag saves the new position for this browser only.
+  let drag = null;
+  let draggedAt = 0;
+
   pinsEl.addEventListener("click", (e) => {
     const el = e.target.closest(".pin");
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();
+    if (performance.now() - draggedAt < 400) return;
     select(el.dataset.uid);
   });
+
   pinsEl.addEventListener("pointerdown", (e) => {
-    if (e.target.closest(".pin")) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
+    const el = e.target.closest(".pin");
+    if (!el) return;
+    e.stopPropagation();
+    e.preventDefault();
+    if (!unlocked) return;
+    const pin = pins.find((p) => p.uid === el.dataset.uid);
+    if (!pin) return;
+    drag = {
+      pin,
+      el,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: pin.x,
+      origY: pin.y,
+      moved: false
+    };
+    try { el.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointer */ }
+    el.classList.add("dragging");
   });
+
+  pinsEl.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true;
+    e.preventDefault();
+    const x = Math.min(100, Math.max(0, drag.origX + (dx / scale / IMG_W) * 100));
+    const y = Math.min(100, Math.max(0, drag.origY + (dy / scale / IMG_H) * 100));
+    drag.pin.x = x;
+    drag.pin.y = y;
+    drag.el.style.left = x + "%";
+    drag.el.style.top = y + "%";
+  });
+
+  function endPinDrag(e) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const d = drag;
+    drag = null;
+    d.el.classList.remove("dragging");
+    try { d.el.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    if (d.moved) {
+      savePins();
+      saveMoved();
+      draggedAt = performance.now();
+      toastMsg("Pin moved — saved in this browser");
+    } else if (e.type === "pointerup") {
+      draggedAt = performance.now();
+      select(d.pin.uid);
+    } else {
+      d.pin.x = d.origX;
+      d.pin.y = d.origY;
+      d.el.style.left = d.origX + "%";
+      d.el.style.top = d.origY + "%";
+    }
+  }
+
+  pinsEl.addEventListener("pointerup", endPinDrag);
+  pinsEl.addEventListener("pointercancel", endPinDrag);
   setTimeout(() => {
     hint.style.opacity = "0";
   }, 9000);
