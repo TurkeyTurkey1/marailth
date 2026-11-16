@@ -678,7 +678,7 @@
 
 <main class="stage" id="stage">
   <div class="world" id="world">
-    <img src="assets/map.webp" alt="Map of Maralith" draggable="false" width="970" height="600" decoding="async">
+    <img src="assets/map.webp?v=2" alt="Map of Maralith" draggable="false" width="970" height="613" decoding="async">
     <div class="pins" id="pins"></div>
   </div>
 
@@ -870,8 +870,10 @@
   const toast = document.getElementById("toast");
   const hint = document.getElementById("hint");
 
+  // Aspect of assets/map.webp (7200 x 4551). Keep these in step with the file
+  // and with the width/height on the <img> above.
   const IMG_W = 970;
-  const IMG_H = 600;
+  const IMG_H = 613.1;
   let minScale = 0.2;
   let maxScale = 5;
 
