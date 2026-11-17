@@ -257,6 +257,27 @@
   .pin:focus-visible { outline: none; }
   .pin:focus-visible .dot { box-shadow: 0 0 0 3px rgba(236, 214, 143, 0.75); }
 
+  /* Minor markers: the secondary towns. Same behaviour, quieter on the map so
+     the twenty named places still read first. */
+  .pin--minor::before {
+    content: "";
+    position: absolute;
+    inset: -11px;
+  }
+
+  .pin--minor .dot {
+    width: 9px;
+    height: 9px;
+    background: rgba(201, 164, 75, 0.82);
+  }
+
+  .pin--minor .dot::after { display: none; }
+
+  .pin--minor:hover .dot,
+  .pin--minor.sel .dot { background: var(--gold-lt); }
+
+  .pin--minor .tag { top: 14px; font-size: 7.5px; letter-spacing: 0.12em; }
+
   body.editor-unlocked .pin { cursor: grab; }
   body.editor-unlocked .pin:hover .dot { box-shadow: 0 0 0 3px rgba(236, 214, 143, 0.55), 0 3px 12px rgba(0, 0, 0, 0.8); }
 
@@ -720,7 +741,7 @@
 
   const CODEX = "codex.html";
   const ATLAS = "atlas.html";
-  // Positions of the twenty named places live in PLACES below as the defaults.
+  // Positions of the map's places live in PLACES below as the defaults.
   // Visitors cannot move them. Editors unlocked with the map code can drag
   // them; their placements are kept in MOVED in that browser only.
   const STORE = "maralith.map.pins.v5";
@@ -730,7 +751,7 @@
   const PLACES = [
     {
       id: "city-of-maradorn", name: "City of Maradorn", sub: "Capital city · Maradorn",
-      x: 46.41, y: 70.07,
+      x: 46.76, y: 68.58,
       desc: "Capital and largest city of Maradorn, on the southernmost island of the continent. One of the oldest continuously inhabited cities in Maralith and the political, intellectual and economic heart of the nation.",
       href: "#city-of-maradorn-68"
     },
@@ -742,7 +763,7 @@
     },
     {
       id: "point-of-eloke", name: "Point of Eloke", sub: "Port · Maradorn",
-      x: 29.4, y: 62.71,
+      x: 29.59, y: 60.05,
       desc: "A fishing village that became a major coastal trading centre, founded around Orbon 7270. It is one of the most important maritime ports connected to Maradorn.",
       href: "#point-of-eloke-76"
     },
@@ -754,13 +775,13 @@
     },
     {
       id: "stoomes", name: "Stoomes", sub: "City · Solvyran territory",
-      x: 54.68, y: 79.9,
+      x: 52.91, y: 76.13,
       desc: "A permanent coastal city on the mainland and Solvyra's chief territorial possession: its continental military base and its link to the wider world.",
       href: "#stoomes-246"
     },
     {
       id: "plains-of-untail", name: "Plains of Untail", sub: "Region · Eastern Maradorn",
-      x: 61.32, y: 61.85,
+      x: 61.23, y: 59.68,
       desc: "A vast open grassland in Maradorn's eastern reaches and one of the most historically important regions in Maralith. The Treaty of Untail was signed here.",
       href: "#plains-of-untail-179"
     },
@@ -772,13 +793,13 @@
     },
     {
       id: "sangar-mesa", name: "Sangar Mesa", sub: "Region · Drymoria",
-      x: 10.73, y: 32.15,
+      x: 12.92, y: 34.25,
       desc: "One of Drymoria's defining landscapes and, through the Aperion Era, the boundary of human geographical knowledge. Its position near Maldona made it strategically vital.",
       href: "#sangar-mesa-261"
     },
     {
       id: "maldona", name: "Maldona", sub: "Frontier city · Aluven",
-      x: 8.59, y: 41.49,
+      x: 17.84, y: 33.88,
       desc: "Aluven's great frontier city, near Sangar and the Ashwood: a military stronghold, an industrial centre and a gateway to the wilderness.",
       href: "#maldona-315"
     },
@@ -790,19 +811,19 @@
     },
     {
       id: "keldra", name: "Keldra", sub: "Trading city · Aluven",
-      x: 12.4, y: 59.29,
+      x: 13.24, y: 57.24,
       desc: "Aluven's second great trading city, historically a gateway between the kingdom and the wider world through its docks, warehouses and shipyards.",
       href: "#keldra-287"
     },
     {
       id: "nandarra", name: "Nandarra", sub: "Great harbour · Aluven",
-      x: 18.18, y: 40.02,
+      x: 20.0, y: 40.28,
       desc: "Aluven's largest city and greatest economic centre, with the busiest harbour in the known world. Former capital and the great gateway across the Great Sea.",
       href: "#nandarra-305"
     },
     {
       id: "wanna", name: "Wanna", sub: "Inland city · Aluven",
-      x: 14.29, y: 51.26,
+      x: 14.91, y: 49.48,
       desc: "The Heart of the Outback: an inland city of plains and dry grasslands that fed and supplied Aluven's coastal giants.",
       href: "#wanna-296"
     },
@@ -814,13 +835,13 @@
     },
     {
       id: "frosthaven", name: "Frosthaven", sub: "Northern land",
-      x: 48.5, y: 13,
+      x: 47.05, y: 17.3,
       desc: "A harsh northern land, settled by Karhiem's lost sailors and known for centuries more by rumour than by map.",
       href: "#frosthaven"
     },
     {
       id: "redwick", name: "Redwick", sub: "Eastern power",
-      x: 76.96, y: 30.71,
+      x: 68.14, y: 33.19,
       desc: "The great eastern power and one of the first lands settled by humans. Its long rivalry with Aluven shaped much of Maralithian history.",
       href: "#redwick"
     },
@@ -847,6 +868,111 @@
       x: 85.65, y: 80.15,
       desc: "A tiny floating island of some three hundred people, and the most technologically advanced society in the known world. Its possession of Stoomes gives it a permanent foothold on the mainland.",
       href: "#kingdom-of-solvyra-192"
+    },
+    {
+      id: "skarn", name: "Skarn", sub: "Capital · Frosthaven",
+      x: 52.03, y: 11.03,
+      desc: "The oldest city in the north and the seat of Frosthaven's government, set at the head of a deep inlet that keeps a channel open for part of the winter.",
+      href: "#frosthaven-skarn",
+      tier: 2
+    },
+    {
+      id: "veland", name: "Veland", sub: "Town · the northern reach",
+      x: 34.66, y: 11.92,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "nartha", name: "Nartha", sub: "City · the northern reach",
+      x: 45.2, y: 13.45,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "solara", name: "Solara", sub: "City · the far west",
+      x: 6.95, y: 19.41,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "blackborough", name: "Blackborough", sub: "City · Ebonwood",
+      x: 18.99, y: 19.1,
+      desc: "The town the survivors of Laperion founded after the Sack, at the far end of the western road and the last settled place before the Ebonwood.",
+      href: "#road-to-laperion-370",
+      tier: 2
+    },
+    {
+      id: "messel", name: "Messel", sub: "Town · Ebonwood",
+      x: 21.85, y: 20.51,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "bjarahelm", name: "Bjarahelm", sub: "Town · Karhiem",
+      x: 66.49, y: 21.38,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "corvium", name: "Corvium", sub: "Empire · eastern sea",
+      x: 75.93, y: 29.04,
+      desc: "An eastern power found by accident in Orbon 4300, when a Redwickian ship ran aground on a reef in the Floripian Sea. Its capital, Goncourt, is built around the imperial palace and the senate.",
+      href: "#corvium",
+      tier: 2
+    },
+    {
+      id: "fenor", name: "Fenor", sub: "Town · Aluven",
+      x: 23.21, y: 29.09,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "baster", name: "Baster", sub: "Town · Aluven",
+      x: 15.61, y: 29.76,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "thore", name: "Thore", sub: "City · Aluven",
+      x: 19.15, y: 29.94,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "marura", name: "Marura", sub: "City · the far west",
+      x: 7.07, y: 31.25,
+      desc: "Marked on the painted map of Maralith. It has no codex chapter yet.",
+      href: "",
+      tier: 2
+    },
+    {
+      id: "redspire", name: "Redspire", sub: "Capital · Sangar Mesa",
+      x: 10.9, y: 34.37,
+      desc: "The capital and largest city of Sangar Mesa, at the heart of the mesa and the centre of Sangar's gold-mining industry.",
+      href: "#redspire-334",
+      tier: 2
+    },
+    {
+      id: "hawker", name: "Hawker", sub: "City · Aluven",
+      x: 7.22, y: 40.78,
+      desc: "Founded later than Aluven's first settlements, Hawker grew steadily until it took on the role the old harbour cities had held.",
+      href: "#the-rise-of-hawker-270",
+      tier: 2
+    },
+    {
+      id: "lywra", name: "Lywra", sub: "City · Redwick",
+      x: 66.26, y: 41.92,
+      desc: "Redwick's second city and the only place in the known world where magic is an institution rather than a rumour, grown around a harbour and a guild.",
+      href: "#redwick-lywra",
+      tier: 2
     }
   ];
 
@@ -891,6 +1017,7 @@
       href: p.href,
       x: p.x,
       y: p.y,
+      tier: p.tier || 1,
       fixed: true
     }));
   }
@@ -1026,7 +1153,7 @@
     pins.forEach((pin) => {
       const el = document.createElement("button");
       el.type = "button";
-      el.className = "pin" + (selected === pin.uid ? " sel" : "");
+      el.className = "pin" + (selected === pin.uid ? " sel" : "") + (pin.tier === 2 ? " pin--minor" : "");
       el.style.left = pin.x + "%";
       el.style.top = pin.y + "%";
       el.dataset.uid = pin.uid;
